@@ -1,7 +1,7 @@
 {
   "ball": {
-    "xVelocity": 1.0,
-    "yVelocity": 1.0
+    "xVelocity": 3.0,
+    "yVelocity": 3.0
   },
   "blocks": [
     {
