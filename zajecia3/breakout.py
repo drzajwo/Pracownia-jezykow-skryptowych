@@ -1,8 +1,9 @@
 import pygame
+import pygame.freetype
 import json
 from pygame.locals import QUIT, K_ESCAPE, K_LEFT, K_RIGHT
 
-# TODO: Menu, Pause, Scores, Saving Score, Sound for ball hitting elements, End game factors
+# TODO: Menu, Pause, Sound for ball hitting elements, End game factors (all blocks or zero lives)
 
 pygame.init()
 
@@ -19,9 +20,11 @@ BALL_Y_VELOCITY = 3.0
 
 screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
 pygame.display.set_caption("Breakout UJ")
+GAME_FONT = pygame.freetype.Font("fonts/TrainOne-regular.ttf", 18)
 
 is_running = True
 is_game_over = False
+score = 0
 
 # ======== SOUNDS ========
 
@@ -67,7 +70,7 @@ class HealthHeart(pygame.sprite.Sprite):
 
 # ======== BLOCKS ========
 
-# TODO: add colors and lives
+# TODO: add colors and lives, score
 class Block(pygame.sprite.Sprite):
 
     def __init__(self, x, y):
@@ -147,7 +150,29 @@ def load_level(level):
         ball_props = data['ball']
         BALL_X_VELOCITY = float(ball_props['xVelocity'])
         BALL_Y_VELOCITY = float(ball_props['yVelocity'])
+        json_file.close()
     return blocks_collection
+
+
+# ======== SCORE SAVING ========
+def read_high_score():
+    try:
+        with open("save/scores.txt", "r") as file:
+            level_score = file.read()
+            file.close()
+            return int(level_score)
+    except FileNotFoundError:
+        return 0
+
+
+def save_score():
+    global score
+    current_high_score = read_high_score()
+    if score < current_high_score:
+        return
+    with open("save/scores.txt", "w") as file:
+        file.write(str(score))
+        file.close()
 
 
 # ======== MAIN LOOP ========
@@ -157,7 +182,7 @@ ball = Ball(620, 720)
 
 live_hearts = pygame.sprite.Group()
 for i in range(player.lives):
-    heart = HealthHeart(i*20 + 40)
+    heart = HealthHeart(i * 20 + 40)
     live_hearts.add(heart)
 
 blocks = load_level(1)
@@ -186,6 +211,7 @@ while is_running:
     if pygame.sprite.spritecollideany(ball, blocks):
         delete_block = pygame.sprite.spritecollideany(ball, blocks)
         delete_block.kill()
+        score += 10
         # check on which part was hit made
         if delete_block.rect.left < ball.rect.centerx < delete_block.rect.right:
             ball.toggle_y()
@@ -211,20 +237,20 @@ while is_running:
         heart_to_remove = live_hearts.sprites().pop(player.lives)
         live_hearts.remove(heart_to_remove)
         if player.lives == 0:
+            save_score()
             is_game_over = True
         ball.pos_x = 620
         ball.pos_y = 720
         ball.direction_x = "left"
         ball.direction_y = "up"
-        # Todo: save score
 
     # ======== DISPLAY INFO ========
     # Health
     for live_heart in live_hearts:
         screen.blit(live_heart.surf, live_heart.rect)
 
-    # TODO: Score
-
+    # Score
+    GAME_FONT.render_to(screen, (640, 7), str(score), (255, 0, 0))
 
     CLOCK.tick(60)
     pygame.display.flip()
