@@ -1,9 +1,9 @@
 import pygame
 import pygame.freetype
 import json
-from pygame.locals import QUIT, K_ESCAPE, K_LEFT, K_RIGHT
+from pygame.locals import QUIT, K_ESCAPE, K_LEFT, K_RIGHT, K_SPACE
 
-# TODO: Pause, End game factors (all blocks or zero lives), scores to list not single
+# TODO: scores to list not single, README
 
 pygame.init()
 
@@ -26,7 +26,8 @@ default_btn_bg_color = (120, 165, 55)
 hovered_btn_bg_color = (120, 255, 55)
 
 is_running = True
-is_game_over = False
+current_level = 1
+max_level = 5
 score = 0
 mode = 'menu'
 
@@ -158,6 +159,7 @@ def load_level(level):
 
 
 # ======== SCORE SAVING ========
+# TODO: IMPROVE: save json with 5 best scores
 def read_high_score():
     try:
         with open("save/scores.txt", "r") as file:
@@ -180,6 +182,19 @@ def save_score():
 
 # ======== GAME LOOP ========
 
+def reset_game_states():
+    global player, ball, live_hearts, score, current_level
+    score = 0
+    current_level = 1
+    player = Player(610, 940)
+    ball = Ball(620, 720)
+
+    live_hearts = pygame.sprite.Group()
+    for i in range(player.lives):
+        heart = HealthHeart(i * 20 + 40)
+        live_hearts.add(heart)
+
+
 player = Player(610, 940)
 ball = Ball(620, 720)
 
@@ -192,7 +207,7 @@ blocks = load_level(1)
 
 
 def game_loop():
-    global score, is_game_over
+    global score
 
     pressed_key = pygame.key.get_pressed()
     player.update(pressed_key)
@@ -240,11 +255,15 @@ def game_loop():
         live_hearts.remove(heart_to_remove)
         if player.lives == 0:
             save_score()
-            is_game_over = True
+            change_mode('over')
         ball.pos_x = 620
         ball.pos_y = 720
         ball.direction_x = "left"
         ball.direction_y = "up"
+
+    # Handle finished level
+    if len(blocks) == 0:
+        change_mode('complete')
 
     # ======== DISPLAY INFO ========
     # Health
@@ -294,8 +313,56 @@ navigation_buttons = [
 
 
 def main_menu():
+    global blocks, current_level, player
+    screen.fill((0, 0, 0))
+    reset_game_states()
+    blocks = load_level(1)
     for btn in navigation_buttons:
         btn.print()
+
+
+# ======== SCORES SCREEN ========
+back_rect = pygame.Rect(520, 775, 245, 60)
+back_button = Button("BACK TO MAIN MENU", 540, 800, back_rect, lambda: change_mode('menu'))
+
+
+def scores_screen():
+    screen.fill((0, 0, 0))
+    red_color = (255, 0, 0)
+    GAME_FONT.render_to(screen, (580, 400), 'Best scores:', red_color)
+    back_button.print()
+
+
+# ======== PAUSE ========
+def pause_screen():
+    red_color = (255, 0, 0)
+    GAME_FONT.render_to(screen, (540, 400), 'GAME PAUSED', red_color)
+    GAME_FONT.render_to(screen, (540, 440), 'PRESS "ESC" KEY TO RESUME', red_color)
+    back_button.print()
+
+
+# ======== LEVEL COMPLETE ========
+def level_complete_screen():
+    screen.fill((0, 0, 0))
+    red_color = (255, 0, 0)
+    GAME_FONT.render_to(screen, (540, 400), 'LEVEL COMPLETE', red_color)
+    if current_level == max_level:
+        GAME_FONT.render_to(screen, (540, 440), 'CONGRATULATIONS! YOU FINISHED GAME', red_color)
+    else:
+        GAME_FONT.render_to(screen, (540, 480), 'PRESS "SPACE" KEY TO CONTINUE', red_color)
+    back_button.print()
+
+
+# ======== GAME OVER ========
+
+def game_over_screen():
+    screen.fill((0, 0, 0))
+    red_color = (255, 0, 0)
+    GAME_FONT.render_to(screen, (540, 400), 'GAME OVER!', red_color)
+    GAME_FONT.render_to(screen, (540, 440), 'YOUR SCORE IS:', red_color)
+    GAME_FONT.render_to(screen, (540, 480), str(score), red_color)
+    GAME_FONT.render_to(screen, (540, 520), 'PRESS "SPACE" KEY TO START AGAIN', red_color)
+    back_button.print()
 
 
 # ======== MAIN LOOP ========
@@ -303,14 +370,35 @@ def main_menu():
 
 # game modes: 'menu', 'game', 'pause', 'scores', 'complete', 'over', 'exit'
 while is_running:
+    # Game events
     for events in pygame.event.get():
         if events.type == QUIT:
             is_running = False
+        # Pause handling
+        if events.type == pygame.KEYDOWN:
+            if events.key == K_ESCAPE:
+                if mode == 'game':
+                    change_mode('pause')
+                elif mode == 'pause':
+                    change_mode('game')
+            elif events.key == K_SPACE:
+                # Load next level
+                if mode == 'complete':
+                    if current_level < max_level:
+                        current_level += 1
+                        blocks = load_level(current_level)
+                # Load first level
+                elif mode == 'over':
+                    reset_game_states()
+                    blocks = load_level(1)
+                    change_mode('game')
         # click buttons
         elif events.type == pygame.MOUSEBUTTONDOWN:
             for button in navigation_buttons:
                 if button.rect.collidepoint(events.pos):
                     button.click()
+            if back_button.rect.collidepoint(events.pos):
+                back_button.click()
         # hover over buttons
         elif events.type == pygame.MOUSEMOTION:
             for button in navigation_buttons:
@@ -318,19 +406,24 @@ while is_running:
                     button.background_color = hovered_btn_bg_color
                 else:
                     button.background_color = default_btn_bg_color
+            if back_button.rect.collidepoint(events.pos):
+                back_button.background_color = hovered_btn_bg_color
+            else:
+                back_button.background_color = default_btn_bg_color
 
+    # Handling different game modes
     if mode == 'menu':
         main_menu()
     elif mode == 'game':
         game_loop()
     elif mode == 'pause':
-        print('pause')
+        pause_screen()
     elif mode == 'scores':
-        print('scores')
+        scores_screen()
     elif mode == 'complete':
-        print('complete')
+        level_complete_screen()
     elif mode == 'over':
-        print('over')
+        game_over_screen()
     elif mode == 'exit':
         is_running = False
 
