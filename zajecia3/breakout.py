@@ -3,7 +3,7 @@ import pygame.freetype
 import json
 from pygame.locals import QUIT, K_ESCAPE, K_LEFT, K_RIGHT
 
-# TODO: Menu, Pause, Sound for ball hitting elements, End game factors (all blocks or zero lives)
+# TODO: Pause, End game factors (all blocks or zero lives), scores to list not single
 
 pygame.init()
 
@@ -22,9 +22,13 @@ screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
 pygame.display.set_caption("Breakout UJ")
 GAME_FONT = pygame.freetype.Font("fonts/TrainOne-regular.ttf", 18)
 
+default_btn_bg_color = (120, 165, 55)
+hovered_btn_bg_color = (120, 255, 55)
+
 is_running = True
 is_game_over = False
 score = 0
+mode = 'menu'
 
 # ======== SOUNDS ========
 
@@ -32,6 +36,7 @@ pygame.mixer.music.load("sounds/intro.mp3")
 pygame.mixer.music.set_volume(0.4)
 
 
+# TODO: uncomment when "releasing"
 # pygame.mixer.music.play(-1)
 
 
@@ -70,14 +75,12 @@ class HealthHeart(pygame.sprite.Sprite):
 
 # ======== BLOCKS ========
 
-# TODO: add colors and lives, score
 class Block(pygame.sprite.Sprite):
 
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
         self.surf = pygame.image.load("images/blue_block.png")
         self.rect = self.surf.get_rect(center=(x, y))
-        # self.surf = pygame.transform.scale(self.surf, (40, 20))
 
 
 # ======== BALL ========
@@ -175,7 +178,7 @@ def save_score():
         file.close()
 
 
-# ======== MAIN LOOP ========
+# ======== GAME LOOP ========
 
 player = Player(610, 940)
 ball = Ball(620, 720)
@@ -187,10 +190,9 @@ for i in range(player.lives):
 
 blocks = load_level(1)
 
-while is_running:
-    for events in pygame.event.get():
-        if events.type == QUIT:
-            is_running = False
+
+def game_loop():
+    global score, is_game_over
 
     pressed_key = pygame.key.get_pressed()
     player.update(pressed_key)
@@ -251,6 +253,86 @@ while is_running:
 
     # Score
     GAME_FONT.render_to(screen, (640, 7), str(score), (255, 0, 0))
+
+
+# ======== MENU ========
+
+class Button:
+    text_color = (255, 0, 0)
+    background_color = default_btn_bg_color
+
+    def __init__(self, text, x_pos, y_pos, rect, action):
+        self.text = text
+        self.rect = rect
+        self.action = action
+        self.x = x_pos
+        self.y = y_pos
+
+    def click(self):
+        self.action()
+
+    def print(self):
+        pygame.draw.rect(screen, self.background_color, self.rect)
+        GAME_FONT.render_to(screen, (self.x, self.y), self.text, self.text_color)
+
+
+rect1 = pygame.Rect(115, 175, 120, 60)
+rect2 = pygame.Rect(115, 275, 120, 60)
+rect3 = pygame.Rect(115, 375, 120, 60)
+
+
+def change_mode(new_mode):
+    global mode
+    mode = new_mode
+
+
+navigation_buttons = [
+    Button("START", 140, 200, rect1, lambda: change_mode('game')),
+    Button("SCORES", 140, 300, rect2, lambda: change_mode('scores')),
+    Button("EXIT", 140, 400, rect3, lambda: change_mode('exit')),
+]
+
+
+def main_menu():
+    for btn in navigation_buttons:
+        btn.print()
+
+
+# ======== MAIN LOOP ========
+
+
+# game modes: 'menu', 'game', 'pause', 'scores', 'complete', 'over', 'exit'
+while is_running:
+    for events in pygame.event.get():
+        if events.type == QUIT:
+            is_running = False
+        # click buttons
+        elif events.type == pygame.MOUSEBUTTONDOWN:
+            for button in navigation_buttons:
+                if button.rect.collidepoint(events.pos):
+                    button.click()
+        # hover over buttons
+        elif events.type == pygame.MOUSEMOTION:
+            for button in navigation_buttons:
+                if button.rect.collidepoint(events.pos):
+                    button.background_color = hovered_btn_bg_color
+                else:
+                    button.background_color = default_btn_bg_color
+
+    if mode == 'menu':
+        main_menu()
+    elif mode == 'game':
+        game_loop()
+    elif mode == 'pause':
+        print('pause')
+    elif mode == 'scores':
+        print('scores')
+    elif mode == 'complete':
+        print('complete')
+    elif mode == 'over':
+        print('over')
+    elif mode == 'exit':
+        is_running = False
 
     CLOCK.tick(60)
     pygame.display.flip()
