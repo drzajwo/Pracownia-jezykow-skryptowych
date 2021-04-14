@@ -140,7 +140,9 @@ class Ball(pygame.sprite.Sprite):
 # ======== LEVEL GEN ========
 
 def load_level(level):
-    global BALL_X_VELOCITY, BALL_Y_VELOCITY
+    global BALL_X_VELOCITY, BALL_Y_VELOCITY, player, ball
+    player = Player(610, 940)
+    ball = Ball(620, 720)
     blocks_collection = pygame.sprite.Group()
     # open json file and parse
     with open("levels/" + str(level) + ".json") as json_file:
@@ -203,11 +205,16 @@ def save_score():
 
 
 # ======== GAME LOOP ========
+player = Player(610, 940)
+ball = Ball(620, 720)
+live_hearts = pygame.sprite.Group()
+
 
 def reset_game_states():
-    global player, ball, live_hearts, score, current_level
+    global player, ball, live_hearts, score, current_level, blocks
     score = 0
     current_level = 1
+
     player = Player(610, 940)
     ball = Ball(620, 720)
 
@@ -215,17 +222,10 @@ def reset_game_states():
     for i in range(player.lives):
         heart = HealthHeart(i * 20 + 40)
         live_hearts.add(heart)
+    blocks = load_level(current_level)
 
 
-player = Player(610, 940)
-ball = Ball(620, 720)
-
-live_hearts = pygame.sprite.Group()
-for i in range(player.lives):
-    heart = HealthHeart(i * 20 + 40)
-    live_hearts.add(heart)
-
-blocks = load_level(1)
+reset_game_states()
 
 
 def game_loop():
@@ -276,7 +276,6 @@ def game_loop():
         heart_to_remove = live_hearts.sprites().pop(player.lives)
         live_hearts.remove(heart_to_remove)
         if player.lives == 0:
-            save_score()
             change_mode('over')
         ball.pos_x = 620
         ball.pos_y = 720
@@ -294,6 +293,7 @@ def game_loop():
 
     # Score
     GAME_FONT.render_to(screen, (640, 7), str(score), (255, 0, 0))
+    GAME_FONT.render_to(screen, (1040, 7), ("Current level: " + str(current_level)), (255, 0, 0))
 
 
 # ======== MENU ========
@@ -338,7 +338,6 @@ def main_menu():
     global blocks, current_level, player
     screen.fill((0, 0, 0))
     reset_game_states()
-    blocks = load_level(1)
     for btn in navigation_buttons:
         btn.print()
 
@@ -414,10 +413,10 @@ while is_running:
                     if current_level < max_level:
                         current_level += 1
                         blocks = load_level(current_level)
+                        change_mode('game')
                 # Load first level
                 elif mode == 'over':
                     reset_game_states()
-                    blocks = load_level(1)
                     change_mode('game')
         # click buttons
         elif events.type == pygame.MOUSEBUTTONDOWN:
@@ -448,8 +447,10 @@ while is_running:
     elif mode == 'scores':
         scores_screen()
     elif mode == 'complete':
+        save_score()
         level_complete_screen()
     elif mode == 'over':
+        save_score()
         game_over_screen()
     elif mode == 'exit':
         is_running = False
