@@ -3,8 +3,6 @@ import pygame.freetype
 import json
 from pygame.locals import QUIT, K_ESCAPE, K_LEFT, K_RIGHT, K_SPACE
 
-# TODO: README, more levels
-
 pygame.init()
 
 CLOCK = pygame.time.Clock()
@@ -36,9 +34,7 @@ mode = 'menu'
 pygame.mixer.music.load("sounds/intro.mp3")
 pygame.mixer.music.set_volume(0.4)
 
-
-# TODO: uncomment when "releasing"
-# pygame.mixer.music.play(-1)
+pygame.mixer.music.play(-1)
 
 
 # ======== PLAYER ========
