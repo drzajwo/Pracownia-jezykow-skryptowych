@@ -3,7 +3,7 @@ import pygame.freetype
 import json
 from pygame.locals import QUIT, K_ESCAPE, K_LEFT, K_RIGHT, K_SPACE
 
-# TODO: scores to list not single, README
+# TODO: README, more levels
 
 pygame.init()
 
@@ -159,24 +159,46 @@ def load_level(level):
 
 
 # ======== SCORE SAVING ========
-# TODO: IMPROVE: save json with 5 best scores
-def read_high_score():
+
+def get_high_scores():
     try:
-        with open("save/scores.txt", "r") as file:
-            level_score = file.read()
+        scores = []
+        with open("save/scores.json", "r") as file:
+            data = json.load(file)
+            for scr in data['scores']:
+                scores.append(int(scr))
             file.close()
-            return int(level_score)
+            scores.sort(reverse=True)
+            return scores
     except FileNotFoundError:
         return 0
 
 
 def save_score():
     global score
-    current_high_score = read_high_score()
-    if score < current_high_score:
+    new_high_score = False
+    to_save_data = {}
+    high_scores = get_high_scores()
+    # because we will save only 5 best scores
+    if len(high_scores) < 5:
+        new_high_score = True
+        high_scores.append(score)
+    else:
+        for saved_score in high_scores:
+            if score > saved_score:
+                new_high_score = True
+                # remove last element
+                high_scores.pop(4)
+                high_scores.append(score)
+                break
+
+    if not new_high_score:
         return
-    with open("save/scores.txt", "w") as file:
-        file.write(str(score))
+    high_scores.sort(reverse=True)
+    to_save_data['scores'] = high_scores
+    with open("save/scores.json", "w") as file:
+        json.dump(to_save_data, file)
+        # file.write(str(score))
         file.close()
 
 
@@ -330,6 +352,11 @@ def scores_screen():
     screen.fill((0, 0, 0))
     red_color = (255, 0, 0)
     GAME_FONT.render_to(screen, (580, 400), 'Best scores:', red_color)
+    high_scores = get_high_scores()
+    y_txt_pos = 440
+    for scr in high_scores:
+        GAME_FONT.render_to(screen, (580, y_txt_pos), str(scr), red_color)
+        y_txt_pos += 40
     back_button.print()
 
 
