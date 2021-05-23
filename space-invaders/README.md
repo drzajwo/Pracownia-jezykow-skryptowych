@@ -8,6 +8,10 @@ example:
 `/c/Program\ Files/LOVE/love.exe /d/programs/space-invaders`
 
 ### Opis
+Względem [szablonu](https://github.com/kprzystalski/love2d-space-invader-template) dodani zostali wrogowie, którzy obniżają swoją pozycję oraz strzelają do gracza.  
+Wybór przeciwnika który będzie strzelał jest losowy. Dodane zostało sprawdzanie kolizji pocisków przeciwnika na graczu i pocisków gracza na przeciwnikach.  
+W przypadku trafienia pocisku gracza w przeciwnika, zostaje on zniszczony, po wyeliminowaniu wszystkich gra jest zakończona sukcesem.  
+W przypadku trafienia pocisku przeciwnika w gracza gra zostaje zakończona porażką.  
 
 ### Wygląd gry
 
@@ -21,11 +25,11 @@ example:
 ![Ekran ukończenia gry](win_screen.png "Ekran ukończenia gry")
 
 
-Images: 
-https://opengameart.org/content/8-bit-alien-assets
-Sounds: 
-https://www.zapsplat.com/sound-effect-category/lasers-and-weapons/
-https://www.jamendo.com/track/271084/zone
-https://freesound.org/people/kyles/sounds/452596/
-https://freesound.org/people/Taira%20Komori/sounds/212757/
+Images:  
+https://opengameart.org/content/8-bit-alien-assets  
+Sounds:  
+https://www.zapsplat.com/sound-effect-category/lasers-and-weapons/  
+https://www.jamendo.com/track/271084/zone  
+https://freesound.org/people/kyles/sounds/452596/  
+https://freesound.org/people/Taira%20Komori/sounds/212757/  
  
